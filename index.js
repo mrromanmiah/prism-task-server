@@ -5,12 +5,18 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config()
 const port = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(cors({
+    origin: [
+        'https://prism-task.web.app'
+
+    ],
+    credentials: true
+}));
 app.use(express.json());
 
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.jjwufqp.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
     serverApi: {
@@ -68,30 +74,40 @@ async function run() {
             res.send(result);
         })
 
+        app.get('/tasks', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email }
+            const result = await taskCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        app.post('/tasks', async (req, res) => {
+            const newTask = req.body;
+            const result = await taskCollection.insertOne(newTask);
+            res.send(result);
+        })
 
 
+        app.put('/tasks/:id', async (req, res) => {
+            const id = req.params.id;
+            const updatedTask = req.body;
+            const query = { _id: new ObjectId(id) };
+            const result = await taskCollection.updateOne(query, { $set: updatedTask });
+            res.send(result);
+          });
+
+        app.delete('/tasks/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId (id) }
+            const result = await taskCollection.deleteOne(query);
+            res.send(result);
+        })
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        await client.connect();
+        // await client.connect();
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
